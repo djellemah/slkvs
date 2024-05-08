@@ -55,12 +55,13 @@ where T : AsRef<[u8]> // because we want storage
   Null,
 }
 
-// pub struct LeafPaths(pub std::collections::HashMap<SchemaPath, Leaf<String>>);
-pub struct LeafPaths(pub std::collections::BTreeMap<SchemaPath, Leaf<String>>);
+// type PathMap<K,V> = std::collections::HashMap<K, V>;
+type PathMap<K,V> = std::collections::BTreeMap<K, V>;
+pub struct LeafPaths(pub PathMap<SchemaPath, Leaf<String>>);
 
 impl LeafPaths {
   pub fn new() -> Self {
-    Self(std::collections::BTreeMap::new())
+    Self(PathMap::new())
   }
 
   pub fn get(&self, path : String) -> Option<String> {
@@ -174,6 +175,25 @@ fn addtree() {
       "inner": "some value"
     }
   }"#;
+
+  let mut leaf_paths = LeafPaths::new();
+  leaf_paths.addtree("uno/due/tre".into(), json.into());
+
+  println!("{:?}", leaf_paths.0);
+
+  let expected_path_one = SchemaPath(vec![Key("uno".into()), Key("due".into()), Key("tre".into()), Key("next".into()), Key("inner".into())]);
+  let expected_path_two  = SchemaPath(vec![Key("uno".into()), Key("due".into()), Key("tre".into()), Key("top".into())]);
+  let expected_value_one = Leaf::String("some value".to_string());
+  let expected_value_two = Leaf::String("this".to_string());
+
+  assert_eq!(leaf_paths.0.get(&expected_path_one).unwrap(), &expected_value_one);
+  assert_eq!(leaf_paths.0.get(&expected_path_two).unwrap(), &expected_value_two);
+}
+
+#[test]
+fn addtree_singular() {
+  use Step::*;
+  let json = r#"singular"#;
 
   let mut leaf_paths = LeafPaths::new();
   leaf_paths.addtree("uno/due/tre".into(), json.into());
