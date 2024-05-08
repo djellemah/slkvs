@@ -55,11 +55,20 @@ where T : AsRef<[u8]> // because we want storage
   Null,
 }
 
-pub struct LeafPaths(pub std::collections::HashMap<SchemaPath, Leaf<String>>);
+// pub struct LeafPaths(pub std::collections::HashMap<SchemaPath, Leaf<String>>);
+pub struct LeafPaths(pub std::collections::BTreeMap<SchemaPath, Leaf<String>>);
 
 impl LeafPaths {
   pub fn new() -> Self {
-    Self(std::collections::HashMap::new())
+    Self(std::collections::BTreeMap::new())
+  }
+
+  pub fn get(&self, path : String) -> Option<String> {
+    let path : SchemaPath = path.into();
+    match self.0.get(&path) {
+      None => Some("ya got an oops".into()),
+      Some(v) => Some(format!("{v}"))
+    }
   }
 
   pub fn listpaths(&self) -> Vec<String> {
@@ -95,20 +104,25 @@ impl LeafPaths {
         None
       }
     };
-
+    // rv.expect(format!("error adding {} at {}", json_obj, path).as_str());
   }
 
   pub fn addtree(&mut self, path: String, json: String) {
     let path : SchemaPath = path.into();
-    let json = serde_json::to_value(json).expect("not parseable {json}");
+    let json = serde_json::from_str(json.as_str()).expect("not parseable {json}");
     self.add_at_path(path, json)
   }
 }
 
-impl<T: std::convert::AsRef<[u8]>> std::fmt::Display for Leaf<T> {
+impl<T: std::convert::AsRef<[u8]> + std::fmt::Display> std::fmt::Display for Leaf<T> {
   // add code here
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-    write!(f,"{}",self)
+    match &self {
+        Leaf::String(str) => write!(f,"{}",str),
+        Leaf::Number(_) => todo!(),
+        Leaf::Boolean(_) => todo!(),
+        Leaf::Null => todo!(),
+    }
   }
 }
 
@@ -147,9 +161,79 @@ fn addtree_obj() {
   let expected_value_one = Leaf::String("some value".to_string());
   let expected_value_two = Leaf::String("this".to_string());
 
-  println!("{:?}", leaf_paths.0.keys().collect::<Vec<_>>());
-  // assert_eq!(leaf_paths.0.keys().collect::<Vec<_>>()[0], &expected_path_zero);
   assert_eq!(leaf_paths.0.get(&expected_path_one).unwrap(), &expected_value_one);
-  // assert_eq!(leaf_paths.0.keys().collect::<Vec<_>>()[1], &expected_path_one);
   assert_eq!(leaf_paths.0.get(&expected_path_two).unwrap(), &expected_value_two);
+}
+
+#[test]
+fn addtree() {
+  use Step::*;
+  let json = r#"{
+    "top": "this",
+    "next": {
+      "inner": "some value"
+    }
+  }"#;
+
+  let mut leaf_paths = LeafPaths::new();
+  leaf_paths.addtree("uno/due/tre".into(), json.into());
+
+  println!("{:?}", leaf_paths.0);
+
+  let expected_path_one = SchemaPath(vec![Key("uno".into()), Key("due".into()), Key("tre".into()), Key("next".into()), Key("inner".into())]);
+  let expected_path_two  = SchemaPath(vec![Key("uno".into()), Key("due".into()), Key("tre".into()), Key("top".into())]);
+  let expected_value_one = Leaf::String("some value".to_string());
+  let expected_value_two = Leaf::String("this".to_string());
+
+  assert_eq!(leaf_paths.0.get(&expected_path_one).unwrap(), &expected_value_one);
+  assert_eq!(leaf_paths.0.get(&expected_path_two).unwrap(), &expected_value_two);
+}
+
+#[test]
+fn get() {
+  use Step::*;
+  let path = SchemaPath(vec![Key("wut".into())]);
+  let mut leaf_paths = LeafPaths::new();
+  leaf_paths.0.insert(path, Leaf::String("empty not empty".into()));
+
+  assert_eq!(leaf_paths.listpaths(), vec!["wut"]);
+  assert_eq!(leaf_paths.get("wut".into()), Some("empty not empty".into()));
+  // assert_eq!("not", "here");
+}
+
+#[test]
+fn hash_leaf() {
+  use std::hash::Hash;
+  use std::hash::Hasher;
+
+  let mut hshr = std::hash::DefaultHasher::new();
+  let leaf_string = Leaf::String("hello");
+  let leaf_number = Leaf::Number("5");
+  leaf_string.hash(&mut hshr);
+  leaf_number.hash(&mut hshr);
+  assert_eq!(hshr.finish(), 3319468350668666690);
+}
+
+#[test]
+fn hash_step() {
+  use std::hash::Hash;
+  use std::hash::Hasher;
+
+  let mut hshr = std::hash::DefaultHasher::new();
+  let step_string = Step::Key("hello".into());
+  let step_number = Step::Index(5);
+  step_string.hash(&mut hshr);
+  step_number.hash(&mut hshr);
+  assert_eq!(hshr.finish(), 18188393044637332126);
+}
+
+#[test]
+fn hash_path() {
+  use std::hash::Hash;
+  use std::hash::Hasher;
+
+  let mut hshr = std::hash::DefaultHasher::new();
+  let path = SchemaPath(vec![Step::Key("wut".into()), Step::Index(5)]);
+  path.hash(&mut hshr);
+  assert_eq!(hshr.finish(), 5364082836139773743);
 }

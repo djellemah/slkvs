@@ -20,21 +20,11 @@ impl Guest for Component {
     }
 
     fn get(path : String) -> Option<String> {
-        STATE.with_borrow(|state| {
-            let path : tree::SchemaPath = path.into();
-            let value = match state.0.get(&path) {
-                None => None,
-                Some(v) => Some(format!("{v}")),
-            };
-            value
-        })
+        STATE.with_borrow(|state| state.get(path))
     }
 
     fn listpaths() -> Vec<String> {
-        let rv = STATE.with_borrow(LeafPaths::listpaths);
-        println!("listpaths {rv:?}");
-        rv
-
+        STATE.with_borrow(LeafPaths::listpaths)
     }
 
     fn addtree(path: String, json: String) {
