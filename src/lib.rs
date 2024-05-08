@@ -35,4 +35,8 @@ impl Guest for Component {
         println!("crashing...");
         std::process::exit(1)
     }
+
+    fn delete(path: std::string::String) {
+        STATE.with_borrow_mut(|db| db.delete(path))
+    }
 }

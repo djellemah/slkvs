@@ -113,6 +113,11 @@ impl LeafPaths {
     let json = serde_json::from_str(json.as_str()).expect("not parseable {json}");
     self.add_at_path(path, json)
   }
+
+  pub fn delete(&mut self, path : String) {
+    let path : SchemaPath = path.into();
+    let _ = self.0.remove(&path);
+  }
 }
 
 impl<T: std::convert::AsRef<[u8]> + std::fmt::Display> std::fmt::Display for Leaf<T> {
