@@ -3,29 +3,29 @@ mod bindings;
 use crate::bindings::exports::golem::component::api::*;
 use std::cell::RefCell;
 
-/// This is one of any number of data types that our application
-/// uses. Golem will take care to persist all application state,
-/// whether that state is local to a function being executed or
-/// global across the entire program.
-struct State {
-    total: u64,
-}
+mod tree;
 
 thread_local! {
     /// This holds the state of our application.
-    static STATE: RefCell<State> = RefCell::new(State {
-        total: 0,
-    });
+    static STATE: RefCell<tree::LeafPaths> = RefCell::new(tree::LeafPaths::new());
 }
 
 struct Component;
 
 impl Guest for Component {
-    fn add(value: u64) {
-        STATE.with_borrow_mut(|state| state.total += value);
+    fn add(path : String, leaf: String) {
+        STATE.with_borrow_mut(|state| state.0.insert(path.into(),tree::Leaf::String(leaf)));
     }
 
-    fn get() -> u64 {
-        STATE.with_borrow(|state| state.total)
+    fn get(_path : String) -> Option<String> {
+        STATE.with_borrow(|_state| {
+            // let path : tree::SchemaPath = path.into();
+            // let value = match state.0.get(&path) {
+            //     None => None,
+            //     Some(_v) => Some("yes a value".into()),
+            // };
+            // value
+            Some("yes a debug value".into())
+        })
     }
 }
