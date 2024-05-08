@@ -12,9 +12,8 @@ thread_local! {
 
 struct Component;
 
-use crate::tree::*;
+use crate::tree::LeafPaths;
 impl Guest for Component {
-
     fn add(path : String, leaf: String) {
         STATE.with_borrow_mut(|state| state.0.insert(path.into(),tree::Leaf::String(leaf)));
     }

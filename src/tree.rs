@@ -67,7 +67,7 @@ impl LeafPaths {
   pub fn get(&self, path : String) -> Option<String> {
     let path : SchemaPath = path.into();
     match self.0.get(&path) {
-      None => Some("ya got an oops".into()),
+      None => None,
       Some(v) => Some(format!("{v}"))
     }
   }
@@ -198,20 +198,17 @@ fn addtree() {
 #[test]
 fn addtree_singular() {
   use Step::*;
-  let json = r#"singular"#;
+  let json = r#""singular""#;
 
   let mut leaf_paths = LeafPaths::new();
   leaf_paths.addtree("uno/due/tre".into(), json.into());
 
   println!("{:?}", leaf_paths.0);
 
-  let expected_path_one = SchemaPath(vec![Key("uno".into()), Key("due".into()), Key("tre".into()), Key("next".into()), Key("inner".into())]);
-  let expected_path_two  = SchemaPath(vec![Key("uno".into()), Key("due".into()), Key("tre".into()), Key("top".into())]);
-  let expected_value_one = Leaf::String("some value".to_string());
-  let expected_value_two = Leaf::String("this".to_string());
+  let expected_path_one = SchemaPath(vec![Key("uno".into()), Key("due".into()), Key("tre".into())]);
+  let expected_value_one = Leaf::String("singular".to_string());
 
   assert_eq!(leaf_paths.0.get(&expected_path_one).unwrap(), &expected_value_one);
-  assert_eq!(leaf_paths.0.get(&expected_path_two).unwrap(), &expected_value_two);
 }
 
 #[test]

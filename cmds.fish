@@ -9,6 +9,14 @@ function get
     --parameters="[\"$argv[1]\"]"
 end
 
+function delete
+  golem-cli worker invoke-and-await \
+    --component-name=yoyo \
+    --worker-name=fst \
+    --function=golem:component/api/delete \
+    --parameters="[\"$argv[1]\"]"
+end
+
 function add
   golem-cli worker invoke-and-await \
     --component-name=yoyo \
@@ -52,5 +60,4 @@ function redeploy -a version --description "redeploy to a version"
   cargo component build --release || return 1
   gli component update --component-name yoyo target/wasm32-wasi/release/yoyo.wasm
   gli worker update --worker-name fst --target-version $argv[1] --mode auto --component-name yoyo
-  # gli worker update --worker-name fst --mode auto --component-name yoyo
 end
