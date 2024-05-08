@@ -7,6 +7,7 @@ interface api {
   get: func(path: string) -> option<string>;
   listpaths: func() -> list<string>;
   addtree: func(path: string, json: string);
+  crash: func();
 }
 
 world yoyo {

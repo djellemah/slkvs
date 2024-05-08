@@ -25,6 +25,22 @@ function listpaths
     --parameters=$argv
 end
 
+function addtree
+  set escaped_tree (echo $argv[2] | jq . -R)
+  golem-cli worker invoke-and-await \
+    --component-name=yoyo \
+    --worker-name=fst \
+    --function=golem:component/api/addtree \
+    --parameters="[\"$argv[1]\", $escaped_tree]"
+end
+
+function crash
+  golem-cli worker invoke-and-await \
+    --component-name=yoyo \
+    --worker-name=fst \
+    --function=golem:component/api/crash
+end
+
 function deploy
   cargo component build --release || return 1
   gli worker delete --worker-name fst --component-name yoyo

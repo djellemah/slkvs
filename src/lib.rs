@@ -12,7 +12,9 @@ thread_local! {
 
 struct Component;
 
+use crate::tree::*;
 impl Guest for Component {
+
     fn add(path : String, leaf: String) {
         STATE.with_borrow_mut(|state| state.0.insert(path.into(),tree::Leaf::String(leaf)));
     }
@@ -22,22 +24,25 @@ impl Guest for Component {
             let path : tree::SchemaPath = path.into();
             let value = match state.0.get(&path) {
                 None => None,
-                Some(v) => Some(format!("{v:?}")),
+                Some(v) => Some(format!("{v}")),
             };
             value
         })
     }
 
     fn listpaths() -> Vec<String> {
-        STATE.with_borrow(|state| {
-            state.0
-                .keys()
-                .map(|step| format!("{step:?}"))
-                .collect::<Vec<String>>()
-        })
+        let rv = STATE.with_borrow(LeafPaths::listpaths);
+        println!("listpaths {rv:?}");
+        rv
+
     }
 
     fn addtree(path: String, json: String) {
-        println!("add tree {path} {json}")
+        STATE.with_borrow_mut(|db| db.addtree(path,json))
+    }
+
+    fn crash() {
+        println!("crashing...");
+        std::process::exit(1)
     }
 }
