@@ -17,15 +17,14 @@ impl Guest for Component {
         STATE.with_borrow_mut(|state| state.0.insert(path.into(),tree::Leaf::String(leaf)));
     }
 
-    fn get(_path : String) -> Option<String> {
-        STATE.with_borrow(|_state| {
-            // let path : tree::SchemaPath = path.into();
-            // let value = match state.0.get(&path) {
-            //     None => None,
-            //     Some(_v) => Some("yes a value".into()),
-            // };
-            // value
-            Some("yes a debug value".into())
+    fn get(path : String) -> Option<String> {
+        STATE.with_borrow(|state| {
+            let path : tree::SchemaPath = path.into();
+            let value = match state.0.get(&path) {
+                None => None,
+                Some(v) => Some(format!("{v:?}")),
+            };
+            value
         })
     }
 }
