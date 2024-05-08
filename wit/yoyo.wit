@@ -5,6 +5,8 @@ package golem:component;
 interface api {
   add: func(path: string, value: string);
   get: func(path: string) -> option<string>;
+  listpaths: func() -> list<string>;
+  addtree: func(path: string, json: string);
 }
 
 world yoyo {

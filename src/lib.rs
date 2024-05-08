@@ -27,4 +27,17 @@ impl Guest for Component {
             value
         })
     }
+
+    fn listpaths() -> Vec<String> {
+        STATE.with_borrow(|state| {
+            state.0
+                .keys()
+                .map(|step| format!("{step:?}"))
+                .collect::<Vec<String>>()
+        })
+    }
+
+    fn addtree(path: String, json: String) {
+        println!("add tree {path} {json}")
+    }
 }
