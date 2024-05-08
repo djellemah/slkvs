@@ -1,25 +1,26 @@
 alias gli=golem-cli
 alias build="cargo component build"
 
+function add_component
+  golem-cli component add --component-name yoyo target/wasm32-wasi/release/yoyo.wasm
+end
+
 function get
-  golem-cli worker invoke-and-await \
-    --component-name=yoyo \
+  golem-cli worker invoke-and-await --component-name=yoyo \
     --worker-name=fst \
     --function=golem:component/api/get \
     --parameters="[\"$argv[1]\"]"
 end
 
 function delete
-  golem-cli worker invoke-and-await \
-    --component-name=yoyo \
+  golem-cli worker invoke-and-await --component-name=yoyo \
     --worker-name=fst \
     --function=golem:component/api/delete \
     --parameters="[\"$argv[1]\"]"
 end
 
 function add
-  golem-cli worker invoke-and-await \
-    --component-name=yoyo \
+  golem-cli worker invoke-and-await --component-name=yoyo \
     --worker-name=fst \
     --function=golem:component/api/add \
     --parameters="[\"$argv[1]\", \"$argv[2]\"]"
@@ -42,11 +43,11 @@ function addtree
     --parameters="[\"$argv[1]\", $escaped_tree]"
 end
 
-function crash
+function drop
   golem-cli worker invoke-and-await \
     --component-name=yoyo \
     --worker-name=fst \
-    --function=golem:component/api/crash
+    --function=golem:component/api/drop
 end
 
 function deploy

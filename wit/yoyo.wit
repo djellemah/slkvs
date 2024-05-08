@@ -8,7 +8,7 @@ interface api {
   listpaths: func() -> list<string>;
   addtree: func(path: string, json: string);
   delete: func(path: string);
-  crash: func();
+  drop: func();
 }
 
 world yoyo {

@@ -30,9 +30,8 @@ impl Guest for Component {
         STATE.with_borrow_mut(|db| db.addtree(path,json))
     }
 
-    fn crash() {
-        println!("crashing...");
-        std::process::exit(1)
+    fn drop() {
+        STATE.with_borrow_mut(|db| db.0.clear())
     }
 
     fn delete(path: std::string::String) {
