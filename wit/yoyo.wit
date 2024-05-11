@@ -1,12 +1,13 @@
 package golem:component;
 
-// See https://github.com/WebAssembly/component-model/blob/main/design/mvp/WIT.md for more details about the WIT syntax
+// For more details about the WIT syntax, see
+// https://github.com/WebAssembly/component-model/blob/main/design/mvp/WIT.md
 
 interface api {
   add: func(path: string, value: string);
   get: func(path: string) -> option<string>;
   listpaths: func() -> list<string>;
-  addtree: func(path: string, json: string);
+  addtree: func(path: string, json: string) -> result<_,string>;
   delete: func(path: string);
   drop: func();
 }

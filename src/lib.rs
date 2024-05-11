@@ -14,11 +14,11 @@ struct Component;
 
 use crate::tree::LeafPaths;
 impl Guest for Component {
-    fn add(path : String, leaf: String) {
-        STATE.with_borrow_mut(|state| state.0.insert(path.into(),tree::Leaf::String(leaf)));
+    fn add(path: String, leaf: String) {
+        STATE.with_borrow_mut(|state| state.add(path, leaf));
     }
 
-    fn get(path : String) -> Option<String> {
+    fn get(path: String) -> Option<String> {
         STATE.with_borrow(|state| state.get(path))
     }
 
@@ -26,8 +26,12 @@ impl Guest for Component {
         STATE.with_borrow(LeafPaths::listpaths)
     }
 
-    fn addtree(path: String, json: String) {
-        STATE.with_borrow_mut(|db| db.addtree(path,json))
+    fn addtree(path: String, json: String) -> Result<(), String> {
+        let rv = STATE.with_borrow_mut(|db| db.addtree(path, json.clone()));
+        rv.map_err(|str| {
+            println!("{json:?}");
+            str.to_string()
+        })
     }
 
     fn drop() {
