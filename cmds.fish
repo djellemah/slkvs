@@ -73,3 +73,8 @@ function redeploy -a version --description "redeploy to a version"
   gli component update --component-name yoyo target/wasm32-wasi/release/yoyo.wasm
   gli worker update --worker-name fst --target-version $argv[1] --mode auto --component-name yoyo
 end
+
+function worker_restart
+  gli worker delete --worker-name fst --component-name yoyo
+  gli worker add --worker-name fst --component-name yoyo
+end
