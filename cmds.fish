@@ -35,7 +35,18 @@ function listpaths
 end
 
 function addtree
-  set escaped_tree (echo $argv[2] | jq . -R)
+  if test -f $argv[2]
+    # read json from file
+    set json_str (cat $argv[2])
+  else
+    # read json from command line
+    set json_str (echo $argv[2])
+  end
+
+  # remove all newlines, and escape json
+  # otherwise golem-cli chokes
+  set escaped_tree (echo $json_str| tr -d "\n" | jq . -Rs | tr -d "\n")
+
   golem-cli worker invoke-and-await \
     --component-name=yoyo \
     --worker-name=fst \
