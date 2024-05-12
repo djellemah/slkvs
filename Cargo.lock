@@ -70,6 +70,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "slkvs"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "serde_json",
+ "wit-bindgen",
+]
+
+[[package]]
 name = "syn"
 version = "2.0.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -93,13 +102,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6237168d93497b26dacdab157b08ad2787d74cdce10f89735f791b2a225eba4d"
 dependencies = [
  "bitflags",
-]
-
-[[package]]
-name = "yoyo"
-version = "0.0.1"
-dependencies = [
- "serde",
- "serde_json",
- "wit-bindgen",
 ]

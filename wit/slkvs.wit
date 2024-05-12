@@ -12,6 +12,6 @@ interface api {
   drop: func();
 }
 
-world yoyo {
+world slkvs {
   export api;
 }
