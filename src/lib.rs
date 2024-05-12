@@ -1,9 +1,10 @@
 mod bindings;
+mod tree;
 
 use crate::bindings::exports::golem::component::api::*;
 use std::cell::RefCell;
 
-mod tree;
+use crate::tree::LeafPaths;
 
 thread_local! {
     /// This holds the state of our application.
@@ -12,7 +13,6 @@ thread_local! {
 
 struct Component;
 
-use crate::tree::LeafPaths;
 impl Guest for Component {
     fn add(path: String, leaf: String) {
         STATE.with_borrow_mut(|state| state.add(path, leaf));
