@@ -12,6 +12,13 @@ function get
     --parameters="[\"$argv[1]\"]"
 end
 
+function gettree
+  golem-cli worker invoke-and-await --component-name=slkvs \
+    --worker-name=fst \
+    --function=golem:component/api/gettree \
+    --parameters="[\"$argv[1]\"]"
+end
+
 function delete
   golem-cli worker invoke-and-await --component-name=slkvs \
     --worker-name=fst \

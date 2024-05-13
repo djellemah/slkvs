@@ -38,6 +38,10 @@ impl Guest for Component {
         })
     }
 
+    fn gettree(path: String) -> Result<String,String> {
+        STATE.with_borrow(|state| state.gettree(path).map_err(|v| v.to_string()) )
+    }
+
     fn drop() {
         STATE.with_borrow_mut(|db| db.0.clear())
     }
