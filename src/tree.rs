@@ -16,7 +16,7 @@ impl std::fmt::Display for &Step {
   }
 }
 
-#[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Clone)]
 pub struct SchemaPath(Vec<Step>);
 
 impl SchemaPath {
@@ -188,6 +188,31 @@ impl LeafPaths {
 
   pub fn listpaths(&self) -> Vec<String> {
     self.0.keys().map(ToString::to_string).collect()
+  }
+
+  /// Given a path, reconstitute the subtree rooted at that path
+  fn subtree_paths(&self, path: SchemaPath) -> Vec<(SchemaPath,Leaf<String>)> {
+    use std::ops::Bound;
+
+    // find the first matching path
+    let mut cursor = self.0.lower_bound(Bound::Included(&path));
+    // cache to obviate repeated calculation
+    let path_len = path.0.len();
+    // result goes here
+    let mut filtered_paths : Vec<(SchemaPath,Leaf<String>)> = vec![];
+
+    loop {
+      match cursor.next() {
+        Some((k,v)) => {
+          let prefix = k.0.get(0..path_len).unwrap();
+          if prefix > &path.0 { break };
+          filtered_paths.push((k.clone(),v.clone()));
+        },
+        None => break,
+      }
+    }
+
+    filtered_paths
   }
 
   fn insert(&mut self, path : SchemaPath, leaf : Leaf<String>) -> Option<Leaf<String>> {
@@ -398,5 +423,54 @@ mod t {
     let err = leaf_paths.addtree("uno/due/tre".into(), json.into()).unwrap_err();
 
     assert_eq!( err.to_string(), "Error(\"trailing characters\", line: 1, column: 11)" );
+  }
+
+  #[test]
+  fn basic_subtree_order() {
+    let path1 = path_of_strs!["top"];
+    let path2 = path_of_strs!["top","next"];
+    let path3 = path_of_strs!["top","next","innter"];
+
+    assert!(path1 < path2);
+    assert!(path2 < path3);
+    assert!(path1 < path3);
+
+    assert!(!(path1 == path2));
+    assert!(!(path2 == path3));
+    assert!(!(path1 == path3));
+  }
+
+  #[allow(unused_mut,unused_variables)]
+  #[test]
+  fn subtree_paths() {
+    let json = r#"{
+      "top": "this",
+      "next": {
+        "inner": "some value"
+      }
+    }"#;
+
+    let mut leaf_paths = LeafPaths::new();
+    leaf_paths.addtree("root".into(), json.into()).unwrap();
+    // the converse case - this should be excluded when checking root
+    leaf_paths.addtree("another".into(), r#""singular""#.into()).unwrap();
+
+    // small subtree
+    let paths = leaf_paths.subtree_paths(path_of_strs!["root","next"]);
+    assert_eq!(paths.len(), 1);
+    assert_eq!(paths[0].0.to_string(), "root/next/inner");
+
+    // bigger subtree
+    let paths = leaf_paths.subtree_paths(path_of_strs!["root"]);
+    assert_eq!(paths.len(), 2);
+    assert_eq!(paths[0].0.to_string(), "root/next/inner");
+    assert_eq!(paths[1].0.to_string(), "root/top");
+
+    // and finally, the whole tree
+    let paths = leaf_paths.subtree_paths(SchemaPath(vec![]));
+    assert_eq!(paths.len(), 3);
+    assert_eq!(paths[0].0.to_string(), "another");
+    assert_eq!(paths[1].0.to_string(), "root/next/inner");
+    assert_eq!(paths[2].0.to_string(), "root/top");
   }
 }
