@@ -1,6 +1,4 @@
-#[allow(unused_imports)]
-use std::cell::RefCell;
-
+/// Steps in a json path. Each step is either a key (for an object) or an index (for an array)
 #[derive(Debug, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum Step {
   Key(String),
@@ -10,7 +8,7 @@ pub enum Step {
 impl std::fmt::Display for &Step {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
     match self {
-      Step::Key(v) => write!(f, "{v}"),
+      Step::Key(v) => f.write_str(v),
       Step::Index(i) => write!(f, "{i}"),
     }
   }
@@ -30,24 +28,38 @@ impl std::fmt::Display for SchemaPath {
     let string_parts = self.0
       .iter()
       .map(|step| step.to_string())
-      .collect::<Vec<String>>();
+      .collect::<Vec<_>>();
 
     f.write_str(&string_parts.join("/"))
   }
 }
 
+// convert a path like "root/things/3/name/first"
+// into &[Key("root"), Key("things"), Index(3), Key("name"), Key("first")]
+fn split_slash_path<S : AsRef<str>>(slash_sep : S) -> Vec<Step> {
+  slash_sep
+    .as_ref()
+    .split('/')
+    .map(|path_step| {
+      // anything that is not parseable as an integer is treated as a key
+      match path_step.parse::<usize>() {
+        Ok(i) => Step::Index(i),
+        Err(_) => Step::Key(path_step.into()),
+      }
+    })
+    .collect::<Vec<_>>()
+}
+
+// E0119 , so can't do mpl<S : AsRef<str>> From<S> for SchemaPath :-(
+impl From<&str> for SchemaPath {
+  fn from(slash_sep: &str) -> Self {
+    Self(split_slash_path(&slash_sep))
+  }
+}
+
 impl From<String> for SchemaPath {
   fn from(slash_sep: String) -> Self {
-    let steps = slash_sep
-      .split('/')
-      .map(|path_step| {
-        match path_step.parse::<usize>() {
-          Ok(i) => Step::Index(i),
-          Err(_) => Step::Key(path_step.into()),
-        }
-      })
-      .collect::<Vec<_>>();
-    Self(steps)
+    Self(split_slash_path(&slash_sep))
   }
 }
 
@@ -122,7 +134,6 @@ impl Add<Step> for &SchemaPath {
 // pub trait LeafStorage = AsRef<str>; also works
 pub trait LeafStorage = AsRef<[u8]>;
 
-#[allow(dead_code)] // because Number and Boolean aren't currently used
 #[derive(Eq, PartialEq, Debug, Clone, Hash, Copy)]
 pub enum Leaf<T>
 where T : LeafStorage, // because we want storage
@@ -204,6 +215,9 @@ impl From<serde_json::Error> for DingString {
   }
 }
 
+// This provides a thin wrapper around the BTree/Hash map and implements
+// function calls coming in from the component. Because it's easier to write
+// tests this way.
 impl LeafPaths {
   pub fn new() -> Self {
     Self(PathMap::new())
@@ -221,7 +235,7 @@ impl LeafPaths {
     self.0.keys().map(ToString::to_string).collect()
   }
 
-  /// Given a path, provide all subpaths
+  /// Given a path, provide all subpaths with their values.
   fn subtree_paths(&self, path: SchemaPath) -> Vec<(SchemaPath,Leaf<String>)> {
     use std::ops::Bound;
 
@@ -292,31 +306,29 @@ impl LeafPaths {
   }
 
   // Given a path and a value, insert keys into json obj until path is empty.
-  // Essentially, the path and the rcp must be traversed in parallel, and new values
-  // must be inserted where necessary. New valuesare either a new collection (ie array or map), or an individual value.
+  // Essentially, the path and the rcp must be traversed in parallel, and new
+  // values must be inserted into the rcp where necessary. New values are
+  // either a new collection (ie array or map), or an individual value.
   //
   // rcp is "recipient", which is kinda like an io, except tree-structured.
   fn traverse_tree<'a,'b>(path: &'a [Step], value: &'a Leaf<String>, rcp : &'b mut serde_json::Value) {
     use serde_json::Value;
 
     // Essentially, a path step is either a key or an index; and a value is a collection or a naked value.
-    match (&path, rcp) {
-      // last step so we can insert value
+    match (path, rcp) {
+      // last step, therefore we can insert value
       ([Step::Key(k)], Value::Object(ref mut map)) => {
         map.insert(k.into(),value.into());
       },
       ([Step::Index(i)], Value::Array(ref mut ary)) => {
-        if *i >= ary.len() {
-          ary.resize(i+1, value.into());
-        } else {
-          println!("array size mismatch {i:?} for {value:?}");
-          ary[*i] = value.into();
-        }
+        if *i != ary.len() { panic!("index {i} unexpected compared to length {}", ary.len()) };
+        ary.push(value.into());
       },
 
       // not the last step, so contruct intermediate and keep going
       ([Step::Key(k), rst @ .. ], Value::Object(ref mut map)) => {
         if let Some(intermediate) = map.get_mut(k) {
+          // we already have an object at this key, so reuse it
           Self::traverse_tree(rst, &value, intermediate);
         } else {
           // Dunno what kind of object it's going to be yet
@@ -330,7 +342,6 @@ impl LeafPaths {
           // we already have an object at this index, so reuse it
           Self::traverse_tree(rst, &value, intermediate);
         } else {
-          if ary.len() > i+1 { panic!("index {i} unexpected compared to length {}", ary.len())}
           // Dunno what kind of object it's going to be yet
           let mut intermediate = serde_json::Value::Null;
           Self::traverse_tree(rst, &value, &mut intermediate);
@@ -360,8 +371,9 @@ impl LeafPaths {
     };
   }
 
-  /// Fetch an entire subtree, as a string representation of the json
-  pub fn gettree(&self, path: String) -> Result<String, DingString> {
+  /// Fetch an entire subtree, as a string representation of the json rooted at that path.
+  /// TODO this conflates Null with None
+  pub fn gettree(&self, path: String) -> Option<String> {
     // fetch all subtree paths with their values
     let path = SchemaPath::from(path);
     let subtree_path_values = self.subtree_paths(path);
@@ -371,7 +383,13 @@ impl LeafPaths {
     for (schema_path,value) in subtree_path_values {
       LeafPaths::traverse_tree(&schema_path.0, &value, &mut obj);
     }
-    Ok(obj.to_string())
+    // TODO This is a hack and not entirely correct. There could be exactly one
+    // value at `path`, and it could indeed by null.
+    if obj == serde_json::Value::Null {
+      None
+    } else {
+      Some(obj.to_string())
+    }
   }
 
   pub fn delete(&mut self, path: String) {
@@ -387,7 +405,7 @@ where
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
     use Leaf::*;
     match &self {
-      String(v) => write!(f, "{}", v),
+      String(v) => f.write_str(&v.to_string()),
       Number(v) => write!(f, "{}", v),
       Boolean(v) => write!(f, "{}", v),
       Null => write!(f,"null"),
@@ -396,7 +414,7 @@ where
 }
 
 #[cfg(test)]
-mod external {
+mod t {
   use super::*;
 
   macro_rules! step_of {
@@ -405,6 +423,7 @@ mod external {
     () => ();
   }
 
+  // This is kinda redundant given split_slash_path
   macro_rules! path_of_strs {
     () => ( vec![] );
     ($($x:expr),+ $(,)?) => (SchemaPath(vec![$(step_of!($x)),*]));
@@ -549,7 +568,7 @@ mod external {
 
   #[test]
   fn basic_subtree_order() {
-    let path1 = path_of_strs!["top"];
+    let path1 = SchemaPath(split_slash_path("top"));
     let path2 = path_of_strs!["top","next"];
     let path3 = path_of_strs!["top","next","innter"];
 
@@ -578,7 +597,7 @@ mod external {
     leaf_paths.addtree("another".into(), r#""singular""#.into()).unwrap();
 
     // small subtree
-    let paths = leaf_paths.subtree_paths(path_of_strs!["root","next"]);
+    let paths = leaf_paths.subtree_paths("root/next".into());
     assert_eq!(paths.len(), 1);
     assert_eq!(paths[0].0.to_string(), "root/next/inner");
 
@@ -642,10 +661,10 @@ mod external {
     assert_eq!(json, r#"{"root":{"next":{"inner":"some value"},"stuff":[9,8,7,6,5],"things":[{"name":"one"},{"name":"two"},{"name":"tre"}],"top":"this","wut":null}}"#);
 
     let json = leaf_paths.gettree("root/things".into()).unwrap();
-    assert_eq!(json, "{\"root\":{\"things\":[{\"name\":\"one\"},{\"name\":\"two\"},{\"name\":\"tre\"}]}}");
+    assert_eq!(json, r#"{"root":{"things":[{"name":"one"},{"name":"two"},{"name":"tre"}]}}"#);
 
     let json = leaf_paths.gettree("root/things/1".into()).unwrap();
-    assert_eq!(json, "{\"root\":{\"things\":[{\"name\":\"two\"}]}}");
+    assert_eq!(json, r#"{"root":{"things":[{"name":"two"}]}}"#);
 
     let json = leaf_paths.gettree("does/not/exist/5/really".into()).unwrap();
     assert_eq!(json, "null");

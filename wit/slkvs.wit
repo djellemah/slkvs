@@ -9,7 +9,7 @@ interface api {
   listpaths: func() -> list<string>;
   addtree: func(path: string, json: string) -> result<_,string>;
   // fetch an entire subtree rooted at path
-  gettree: func(path: string) -> result<string,string>;
+  gettree: func(path: string) -> option<string>;
   delete: func(path: string);
   drop: func();
 }

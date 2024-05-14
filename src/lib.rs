@@ -32,14 +32,11 @@ impl Guest for Component {
 
     fn addtree(path: String, json: String) -> Result<(), String> {
         let rv = STATE.with_borrow_mut(|db| db.addtree(path, json.clone()));
-        rv.map_err(|str| {
-            println!("{json:?}");
-            str.to_string()
-        })
+        rv.map_err(|st| st.to_string())
     }
 
-    fn gettree(path: String) -> Result<String,String> {
-        STATE.with_borrow(|state| state.gettree(path).map_err(|v| v.to_string()) )
+    fn gettree(path: String) -> Option<String> {
+        STATE.with_borrow(|state| state.gettree(path) )
     }
 
     fn drop() {
