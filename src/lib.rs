@@ -1,3 +1,4 @@
+// Yes, nightly
 #![feature(trait_alias)]
 #![feature(btree_cursors)]
 #![feature(iter_intersperse)]

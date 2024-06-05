@@ -159,26 +159,19 @@ where T : LeafStorage, // because we want storage
 //   }
 // }
 
-impl From<Leaf<String>> for serde_json::Value {
-  fn from(leaf: Leaf<String>) -> Self {
-    use serde_json::Value;
-
-    match leaf {
-      Leaf::String(v) => Value::String(v),
-      Leaf::Number(v) => Value::Number(v.parse().unwrap()),
-      Leaf::Boolean(v) => Value::Bool(v),
-      Leaf::Null => Value::Null,
-    }
-  }
-}
-
 impl From<&Leaf<String>> for serde_json::Value {
   fn from(leaf: &Leaf<String>) -> Self {
     use serde_json::Value;
 
     match leaf {
       Leaf::String(v) => Value::String(v.clone()),
+
+      // If this parse fails we should've chosen arbitrary precision at compile
+      // time. So not much we can do about that here, short of not using
+      // serde_json::Value as the enum. Which is not worthwhile at this point,
+      // in this codebase.
       Leaf::Number(v) => Value::Number(v.parse().unwrap()),
+
       Leaf::Boolean(v) => Value::Bool(*v),
       Leaf::Null => Value::Null,
     }
@@ -195,7 +188,6 @@ where
   }
 }
 
-// type PathMap<K,V> = std::collections::HashMap<K, V>;
 type PathMap<K, V> = std::collections::BTreeMap<K, V>;
 pub struct LeafPaths(pub PathMap<SchemaPath,Leaf<String>>);
 
@@ -666,7 +658,7 @@ mod t {
     let json = leaf_paths.gettree("root/things/1".into()).unwrap();
     assert_eq!(json, r#"{"root":{"things":[{"name":"two"}]}}"#);
 
-    let json = leaf_paths.gettree("does/not/exist/5/really".into()).unwrap();
-    assert_eq!(json, "null");
+    let json = leaf_paths.gettree("does/not/exist/5/really".into());
+    assert!(json.is_none());
   }
 }
