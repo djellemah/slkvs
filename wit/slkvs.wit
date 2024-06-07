@@ -3,7 +3,7 @@ package golem:component;
 // For more details about the WIT syntax, see
 // https://github.com/WebAssembly/component-model/blob/main/design/mvp/WIT.md
 
-// naming is a little odd, because these map directly in cli commands,
+// naming is a little odd, because these map directly to cli commands,
 // and there, it's a PITA to type unnecessary - and _
 interface api {
   add: func(path: string, value: string);

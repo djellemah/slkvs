@@ -37,7 +37,16 @@ impl Guest for Component {
     }
 
     fn gettree(path: String) -> Option<String> {
-        STATE.with_borrow(|state| state.gettree(path) )
+        STATE.with_borrow(|state| {
+            let subtree = state.gettree(path);
+            // TODO This is a hack and not entirely correct. There could be exactly one
+            // value at `path`, and it could indeed by null.
+            if subtree == tree::Collector::Empty {
+                None
+            } else {
+                Some(subtree.to_json().to_string())
+            }
+        })
     }
 
     fn drop() {
