@@ -1,6 +1,6 @@
 add web-app/servlet/0/servlet-name cofaxCDS
 add web-app/servlet/0/servlet-class org.cofax.cds.CDSServlet
-add web-app/servlet/0/init-param/configGlossary:installationAt Philadelphia, PA
+add web-app/servlet/0/init-param/configGlossary:installationAt "Philadelphia, PA"
 add web-app/servlet/0/init-param/configGlossary:adminEmail ksm@pobox.com
 add web-app/servlet/0/init-param/configGlossary:poweredBy Cofax
 add web-app/servlet/0/init-param/configGlossary:poweredByIcon /images/cofax.gif

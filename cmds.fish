@@ -28,7 +28,6 @@ function redeploy -a version --description "redeploy to a version"
   # Normal output is something like
   # Updated component with ID 3825415a-f2f9-42dc-99d3-715ff89690a0. New version: 1. Component size is 168531 bytes.
   set result_msg (golem-cli component update --component-name slkvs target/wasm32-wasi/release/slkvs.wasm)
-  echo vs: (count $result_msg)
 
   # extract version
   set captures (string match --regex -g 'Updated component with ID (.*?) New version: (\d+). Component size is (\d+) bytes.*' $result_msg)
@@ -77,7 +76,7 @@ function get
     --parameters=(gli_parameters $argv[1])
 end
 
-function hgettree
+function hgettree --description "For a given path, retrieve the entire subtree, with output in json"
   set component_id (gli_component_id)
   set worker_name fst
   set function_name golem:component/api/gettree
@@ -87,21 +86,21 @@ function hgettree
   echo -e (curl --silent --json $params $url) | jq .result[0] | string unescape | jq .
 end
 
-function gettree
+function gettree --description "For a given path, retrieve the entire subtree, with output in WAVE"
   golem-cli worker invoke-and-await --component-name=slkvs \
     --worker-name=fst \
     --function=golem:component/api/gettree \
     --parameters=(gli_parameters $argv[1])
 end
 
-function delete
+function delete  --description "For a given path, delete the value. Fails on a subtree."
   golem-cli worker invoke-and-await --component-name=slkvs \
     --worker-name=fst \
     --function=golem:component/api/delete \
     --parameters=(gli_parameters $argv[1])
 end
 
-function add
+function add --description "For a given path, add the value."
   golem-cli worker invoke-and-await --component-name=slkvs \
     --worker-name=fst \
     --function=golem:component/api/add \
@@ -128,15 +127,12 @@ function gli_component_id
   echo $component_id
 end
 
-function hlistpaths --description "invoke listpaths via http api"
+function hlistpaths --description "List all paths, with output in json rather than WAVE"
   set component_id (gli_component_id)
   set worker_name fst
   set function_name golem:component/api/listpaths
-  # curl -d '{"function": "listpaths"}' "http://localhost:9881/v2/components/$component_id/workers/$worker_name/invoke-and-await?function=$function_name&calling-convention=Component"
-  # Content-Type: multipart/form-data
-  # curl -F '{"params": null}' "http://localhost:9881/v2/components/$component_id/workers/$worker_name/invoke-and-await?function=$function_name&calling-convention=Component"
-  # curl -F "function=$function_name" -F "calling-convention=Component" "http://localhost:9881/v2/components/$component_id/workers/$worker_name/invoke-and-await"
   set json_rsp (curl --silent --json '{"params": []}' "http://localhost:9881/v2/components/$component_id/workers/$worker_name/invoke-and-await?function=$function_name&calling-convention=Component")
+  # because golem api returns this in a top-level result: []
   echo $json_rsp | jq .result[0]
 end
 
@@ -160,7 +156,7 @@ function addtree
     --parameters=(gli_noquote_parameters (gli_quote $argv[1]) $escaped_tree)
 end
 
-function drop
+function drop --description "Remove all key->values"
   golem-cli worker invoke-and-await \
     --component-name=slkvs \
     --worker-name=fst \

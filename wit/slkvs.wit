@@ -5,7 +5,7 @@ package golem:component;
 
 // naming is a little odd, because these map directly to cli commands,
 // and there, it's a PITA to type unnecessary - and _
-interface api {
+interface cli {
   add: func(path: string, value: string);
   get: func(path: string) -> option<string>;
   listpaths: func() -> list<string>;
@@ -17,5 +17,5 @@ interface api {
 }
 
 world slkvs {
-  export api;
+  export cli;
 }
